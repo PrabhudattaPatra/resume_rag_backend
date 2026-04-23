@@ -1,0 +1,19 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+
+# Irrelevant Monorepo Folders (if building locally)
+frontend/
+dags/
+data/
+experiment/
+.dvc/
