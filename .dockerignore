@@ -11,9 +11,3 @@ env/
 venv/
 .env
 
-# Irrelevant Monorepo Folders (if building locally)
-frontend/
-dags/
-data/
-experiment/
-.dvc/

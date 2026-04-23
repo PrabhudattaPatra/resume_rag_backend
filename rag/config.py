@@ -1,7 +1,7 @@
 import os
 from pinecone import Pinecone
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -18,8 +18,8 @@ embeddings = HuggingFaceEmbeddings(
 )
 
 # Initialize the main language models
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash"
+llm = ChatGroq(
+    model="llama-3.3-70b-versatile"
 )
 
 # If grader needs a different LLM or we want to abstract it:
