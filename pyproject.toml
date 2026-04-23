@@ -1,0 +1,41 @@
+[project]
+name = "rag"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "accelerate>=1.13.0",
+    "bs4>=0.0.2",
+    "dagshub>=0.6.9",
+    "dvc>=3.67.1",
+    "dvc-s3>=3.3.0",
+    "einops>=0.8.2",
+    "fastapi>=0.135.3",
+    "gradio>=6.10.0",
+    "langchain>=1.2.14",
+    "langchain-classic>=1.0.3",
+    "langchain-community>=0.4.1",
+    "langchain-core>=1.2.24",
+    "langchain-google-genai>=4.2.1",
+    "langchain-groq>=1.1.2",
+    "langchain-huggingface>=1.2.1",
+    "langchain-pinecone>=0.2.13",
+    "langchain-postgres>=0.0.17",
+    "langchain-tavily>=0.2.17",
+    "langgraph>=1.1.4",
+    "langgraph-checkpoint-postgres>=3.0.5",
+    "langsmith>=0.7.24",
+    "pdf2image>=1.17.0",
+    "pillow>=12.2.0",
+    "psycopg2>=2.9.11",
+    "pymupdf>=1.27.2.2",
+    "pypdf>=6.9.2",
+    "pytesseract>=0.3.13",
+    "sentence-transformers>=5.3.0",
+    "structlog>=25.5.0",
+    "torch>=2.11.0",
+    "torchvision>=0.26.0",
+    "transformers>=5.5.0",
+    "uvicorn>=0.42.0",
+]
