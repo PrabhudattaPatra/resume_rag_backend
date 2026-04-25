@@ -10,6 +10,11 @@ os.environ["GOOGLE_API_KEY"] = "mock-google-key"
 os.environ["GROQ_API_KEY"] = "mock-groq-key"
 os.environ["TAVILY_API_KEY"] = "mock-tavily-key"
 
+import sys
+from unittest.mock import MagicMock
+# Completely mock the pinecone module so `pc.Index()` doesn't make an HTTP request during import
+sys.modules['pinecone'] = MagicMock()
+
 from app import app
 import app as app_module
 
