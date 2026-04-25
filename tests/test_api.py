@@ -2,9 +2,13 @@ import pytest
 import json
 from fastapi.testclient import TestClient
 
-# Mock the environment variable before importing the app to prevent real DB connections
+# Mock the environment variables before importing the app to prevent real connections
 import os
 os.environ["DATABASE_URL"] = "postgresql://mock_user:mock_pass@localhost:5432/mock_db"
+os.environ["PINECONE_API_KEY"] = "mock-pinecone-key"
+os.environ["GOOGLE_API_KEY"] = "mock-google-key"
+os.environ["GROQ_API_KEY"] = "mock-groq-key"
+os.environ["TAVILY_API_KEY"] = "mock-tavily-key"
 
 from app import app
 import app as app_module
