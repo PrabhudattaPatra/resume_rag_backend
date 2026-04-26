@@ -1,6 +1,6 @@
 import os
 from pinecone import Pinecone
-from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
@@ -13,10 +13,7 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 pc = Pinecone(api_key=PINECONE_API_KEY)
 
 # Define embedding model used across all indices
-embeddings = HuggingFaceEmbeddings(
-    model_name="nomic-ai/nomic-embed-text-v1.5",
-    model_kwargs={"trust_remote_code": True}
-)
+embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
 
 # Initialize the main language models
 llm = ChatGroq(
