@@ -44,17 +44,17 @@ notice_store = PineconeVectorStore(index=notice_index, embedding=embeddings)
 # We increase 'k' here because the re-ranker needs more candidates to choose from
 doc_retriever = doc_store.as_retriever(
     search_type="mmr",
-    search_kwargs={"k": 10, "fetch_k": 30, "lambda_mult": 0.6}
+    search_kwargs={"k": 5,"lambda_mult": 0.6}
 )
 
 exam_retriever = exam_store.as_retriever(
     search_type="mmr",
-    search_kwargs={"k": 10, "fetch_k": 30, "lambda_mult": 0.5}
+    search_kwargs={"k": 5,"lambda_mult": 0.5}
 )
 
 notice_retriever = notice_store.as_retriever(
     search_type="mmr",
-    search_kwargs={"k": 10, "fetch_k": 30, "lambda_mult": 0.5}
+    search_kwargs={"k": 5,"lambda_mult": 0.5}
 )
 
 # --- Create Ensemble Retrievers (Hybrid Search) ---

@@ -22,19 +22,28 @@ llm = ChatGroq(
     model="llama-3.3-70b-versatile"
 )
 
-# Optional: Add Redis Semantic Caching
+# Optional: Add Redis Semantic Caching with Logging
 REDIS_URL = os.getenv("REDIS_URL")
 if REDIS_URL:
+    class LoggingRedisCache(RedisSemanticCache):
+        def lookup(self, prompt: str, llm_string: str):
+            result = super().lookup(prompt, llm_string)
+            if result:
+                print(f"🎯 [CACHE HIT] Serving response from Redis Semantic Cache for: '{prompt[:50]}...'")
+            else:
+                print(f"☁️ [CACHE MISS] Querying LLM for: '{prompt[:50]}...'")
+            return result
+
     try:
         # Use Semantic Cache (fuzzy matching) instead of standard cache (exact match)
-        semantic_cache = RedisSemanticCache(
+        semantic_cache = LoggingRedisCache(
             redis_url=REDIS_URL,
             embeddings=embeddings,
             ttl=600,
             distance_threshold=0.1  # Adjust similarity sensitivity
         )
         set_llm_cache(semantic_cache)
-        print("🚀 Redis Semantic Cache enabled.")
+        print("🚀 Redis Semantic Cache enabled with logging.")
     except Exception as e:
         print(f"⚠️ Redis connection failed: {e}. Proceeding without cache.")
 
