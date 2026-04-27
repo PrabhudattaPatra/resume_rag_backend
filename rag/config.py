@@ -3,6 +3,8 @@ from pinecone import Pinecone
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_redis import RedisSemanticCache
+from langchain_core.globals import set_llm_cache
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -19,6 +21,22 @@ embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
 llm = ChatGroq(
     model="llama-3.3-70b-versatile"
 )
+
+# Optional: Add Redis Semantic Caching
+REDIS_URL = os.getenv("REDIS_URL")
+if REDIS_URL:
+    try:
+        # Use Semantic Cache (fuzzy matching) instead of standard cache (exact match)
+        semantic_cache = RedisSemanticCache(
+            redis_url=REDIS_URL,
+            embeddings=embeddings,
+            ttl=600,
+            distance_threshold=0.1  # Adjust similarity sensitivity
+        )
+        set_llm_cache(semantic_cache)
+        print("🚀 Redis Semantic Cache enabled.")
+    except Exception as e:
+        print(f"⚠️ Redis connection failed: {e}. Proceeding without cache.")
 
 # If grader needs a different LLM or we want to abstract it:
 response_model = llm

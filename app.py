@@ -18,33 +18,19 @@ from rag.graph import workflow
 load_dotenv()
 DB_URI = os.getenv("DATABASE_URL")
 
-# Global compiled graph — set during lifespan startup
-compiled_graph = None
+# Global uncompiled workflow
+# We will compile it per-request to prevent Neon DB "connection closed" timeouts.
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     FastAPI lifespan manager.
-    Opens the async Postgres connection pool on startup,
-    sets up the checkpoint tables, compiles the graph, 
-    then cleanly closes the pool on shutdown.
+    We removed the global DB connection pool because Neon Serverless Postgres 
+    aggressively drops idle connections, causing "the connection is closed" errors.
     """
-    global compiled_graph
-    try:
-        async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
-            # Creates checkpoint tables if they don't already exist
-            await checkpointer.setup()
-            compiled_graph = workflow.compile(checkpointer=checkpointer)
-            print("✅ Postgres checkpointer ready. Graph compiled successfully.")
-            yield  # Server runs here
-        # Connection pool is automatically closed after yield
-        print("🔌 Postgres connection pool closed.")
-    except Exception as e:
-        print(f"❌ Failed to initialize database connection: {e}")
-        # Proceed with yielding so FastAPI can start gracefully, we'll handle the None compiled_graph in endpoints.
-        yield
-
-
+    print("✅ FastAPI Server starting up.")
+    yield
+    print("🔌 FastAPI Server shutting down.")
 app = FastAPI(title="LangGraph Chatbot API", lifespan=lifespan)
 
 app.add_middleware(
@@ -57,40 +43,46 @@ app.add_middleware(
 
 async def stream_generator(message: str, thread_id: str):
     try:
-        config = {"configurable": {"thread_id": thread_id}}
-        inputs = {"messages": [("user", message)]}
-
-        async for message_chunk, metadata in compiled_graph.astream(
-            inputs, 
-            config=config, 
-            stream_mode="messages"
-        ):
-            node_name = metadata.get("langgraph_node")
+        # Create a fresh database connection for each request
+        # This completely solves the "the connection is closed" error caused by idle Neon timeouts
+        async with AsyncPostgresSaver.from_conn_string(DB_URI) as checkpointer:
+            await checkpointer.setup()
+            compiled_graph = workflow.compile(checkpointer=checkpointer)
             
-            if node_name in ["generate_answer", "generate_query_or_respond"]:
-                is_tool_call = hasattr(message_chunk, "tool_call_chunks") and message_chunk.tool_call_chunks
+            config = {"configurable": {"thread_id": thread_id}}
+            inputs = {"messages": [("user", message)]}
+
+            async for message_chunk, metadata in compiled_graph.astream(
+                inputs, 
+                config=config, 
+                stream_mode="messages"
+            ):
+                node_name = metadata.get("langgraph_node")
                 
-                if not is_tool_call:
-                    chunk_text = ""
-                    if hasattr(message_chunk, "content_blocks"):
-                        for block in message_chunk.content_blocks:
-                            if block["type"] == "text" and block["text"]:
-                                chunk_text += block["text"]
-                    elif hasattr(message_chunk, "text") and message_chunk.text:
-                        chunk_text = message_chunk.text
+                if node_name in ["generate_answer", "generate_query_or_respond"]:
+                    is_tool_call = hasattr(message_chunk, "tool_call_chunks") and message_chunk.tool_call_chunks
                     
-                    if chunk_text:
-                        data = json.dumps({"text": chunk_text})
-                        yield f"data: {data}\n\n"
+                    if not is_tool_call:
+                        chunk_text = ""
+                        if hasattr(message_chunk, "content_blocks"):
+                            for block in message_chunk.content_blocks:
+                                if block["type"] == "text" and block["text"]:
+                                    chunk_text += block["text"]
+                        elif hasattr(message_chunk, "text") and message_chunk.text:
+                            chunk_text = message_chunk.text
+                        
+                        if chunk_text:
+                            data = json.dumps({"text": chunk_text})
+                            yield f"data: {data}\n\n"
     except Exception as e:
+        import traceback
+        traceback.print_exc()  # Print the full error stack trace to the Docker logs!
         error_data = json.dumps({"text": f"\n\n[System Error: {str(e)}]"})
         yield f"data: {error_data}\n\n"
 
 @app.get("/health")
 async def health_check():
     try:
-        if compiled_graph is None:
-            return {"status": "unhealthy", "service": "LangGraph Chatbot API", "error": "Database connection failed"}
         return {"status": "healthy", "service": "LangGraph Chatbot API"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -109,9 +101,7 @@ class ChatRequest(BaseModel):
 @app.post("/api/chat")
 async def chat_endpoint(request_data: ChatRequest):
     try:
-        if compiled_graph is None:
-            raise HTTPException(status_code=503, detail="Chatbot engine is currently unavailable due to database connection failure.")
-            
+
         message = request_data.message
         thread_id = request_data.thread_id or str(uuid.uuid4())
         
